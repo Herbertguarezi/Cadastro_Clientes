@@ -1,4 +1,4 @@
-package br.senai.sp.cadastro;
+package br.senai.sp.cadastro.adapters.out.persistence;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -11,7 +11,7 @@ import lombok.Setter;
 public class ClienteEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @Column(nullable = false)
     private String name;
