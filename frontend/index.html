@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Clientes</title>
+
+    <!-- Link para o CSS do Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Link para o jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Link para o plugin jsPDF-AutoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.21/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        body {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin-top: 20px;
+        }
+        table {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Botão para redirecionar para a página de cadastro -->
+        <a href="cadastro.html" class="btn btn-success mb-3">Cadastrar Novo Cliente</a>
+
+        <h2>Lista de Clientes</h2>
+        <table id="clientesTable" class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Ação</th> <!-- Coluna de Ação -->
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Os dados dos clientes serão inseridos aqui via JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Script do Bootstrap e do JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <script>
+        // Função para fazer o GET na rota e preencher a tabela
+        function fetchClientes() {
+            fetch('http://localhost:8080/clientes')
+                .then(response => response.json())
+                .then(data => {
+
+		    console.log(data)
+                    // Selecionar o corpo da tabela
+                    const tableBody = document.querySelector('#clientesTable tbody');
+
+                    // Limpar a tabela antes de preencher
+                    tableBody.innerHTML = '';
+
+                    // Iterar sobre os dados e adicionar cada linha na tabela
+                    data.forEach(cliente => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${cliente.id}</td>
+                            <td>${cliente.name}</td>
+                            <td>${cliente.email}</td>
+                            <td>
+                                <button class="btn btn-warning" onclick="editarCliente(${cliente.id})">Editar</button>
+                                <button class="btn btn-danger" onclick="removerCliente(${cliente.id})">Remover</button>
+                                <button class="btn btn-primary" onclick="gerarContrato(${cliente.id}, '${cliente.nome}', '${cliente.email}')">Gerar Contrato</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar clientes:', error);
+                });
+        }
+
+        // Função para editar o cliente
+        function editarCliente(id) {
+            // Redireciona para a página de atualização e passa o ID como parâmetro na URL
+            window.location.href = `atualizar.html?id=${id}`;
+        }
+
+        // Função para remover o cliente da lista
+        function removerCliente(id) {
+            if (confirm('Tem certeza que deseja remover este cliente?')) {
+                fetch(`http://localhost:8080/clientes/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Cliente removido com sucesso!');
+                        window.location.reload();
+                    } else {
+                        alert('Erro ao remover cliente');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao remover cliente:', error);
+                    alert('Ocorreu um erro ao tentar remover o cliente.');
+                });
+            }
+        }
+
+        // Função para gerar o contrato em PDF
+        function gerarContrato(id, nome, email) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Adicionando título e subtítulo ao contrato
+            doc.setFontSize(18);
+            doc.text("Contrato de Prestação de Serviços de Manutenção", 20, 20);
+            doc.setFontSize(12);
+            doc.text(`Contrato de prestação de serviços entre o prestador de serviços e o cliente abaixo descrito:`, 20, 30);
+
+            // Informações do Cliente
+            doc.text(`Nome do Cliente: ${nome}`, 20, 40);
+            doc.text(`Email do Cliente: ${email}`, 20, 50);
+            doc.text(`Valor do Serviço: R$ 150,00`, 20, 60);
+
+            // Tipos de pagamento
+            doc.text("Formas de Pagamento: ", 20, 70);
+            doc.text("- À vista", 20, 80);
+            doc.text("- Cartão de Crédito", 20, 90);
+            doc.text("- Parcelado em até 3 vezes", 20, 100);
+
+            // Cláusulas do contrato (informal, apenas exemplo)
+            doc.text("Cláusulas:", 20, 120);
+            doc.text("1. O serviço de manutenção de geladeira será realizado dentro do prazo estipulado.", 20, 130);
+            doc.text("2. O pagamento deverá ser feito de acordo com a opção escolhida pelo cliente.", 20, 140);
+            doc.text("3. Este contrato entra em vigor a partir da assinatura de ambas as partes.", 20, 150);
+
+            // Espaço para assinaturas
+            doc.text("Assinatura do Cliente:", 20, 170);
+            doc.line(20, 175, 180, 175);  // Linha de assinatura do cliente
+            doc.text("Assinatura do Prestador de Serviço:", 20, 190);
+            doc.line(20, 195, 180, 195);  // Linha de assinatura do prestador
+
+            // Salvando o contrato em PDF
+            doc.save(`contrato_${nome.replace(" ", "_")}_${id}.pdf`);
+        }
+
+        // Chama a função fetchClientes assim que a página é carregada
+        window.onload = fetchClientes;
+    </script>
+</body>
+</html>
